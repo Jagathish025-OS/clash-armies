@@ -19,6 +19,11 @@ export default defineConfig((env) => {
 	const plugins: PluginOption[] = [
 		sveltekit({
 			preprocess: vitePreprocess(),
+
+			paths: {
+				base: '/COC',
+			},
+
 			adapter: adapter({
 				// Where the final node build that uses the vite build goes.
 				// This is the code that gets deployed to prod.
@@ -58,7 +63,13 @@ export default defineConfig((env) => {
 		test: {
 			include: ['tests/app/**/*.ts'],
 			coverage: {
-				exclude: ['build/**', 'scripts/**', 'discord/**', 'svelte.config.js', ...coverageConfigDefaults.exclude],
+				exclude: [
+					'build/**',
+					'scripts/**',
+					'discord/**',
+					'svelte.config.js',
+					...coverageConfigDefaults.exclude,
+				],
 			},
 			fileParallelism: false,
 		},
