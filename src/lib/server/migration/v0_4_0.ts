@@ -95,7 +95,7 @@ export default function migration(runStep: MigrationFn) {
         -- NOTE: armyMetricId may not exist yet, so code will need to ensure if it doesn't exist yet, to insert an entry first.
         CREATE TABLE army_metric_events (
             id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
-            visitorUUID UUID NOT NULL,
+            visitorUUID VARCHAR(36) NOT NULL,
             armyMetricId INT NOT NULL,
             lastSeen TIMESTAMP DEFAULT NOW(),
             CONSTRAINT fk_army_metric_events_army_metric_id FOREIGN KEY (armyMetricId) REFERENCES army_metrics (id) ON DELETE CASCADE,
