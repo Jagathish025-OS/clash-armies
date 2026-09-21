@@ -503,23 +503,23 @@ export class ArmyAPI {
 			.groupBy('a.id')
 			.selectAll('a')
 			.select((eb) => [
-				// TODO: should not have to CAST, needs investigating
+				// TiDB-compatible integer casts. TiDB rejects CAST(... AS INTEGER).
 				sql<number>`CAST((
 					(COALESCE(av.votes, 0) * ${weights.vote}) +
 					(COALESCE(metric_pv.value, 0) * ${weights.pageView}) +
 					(COALESCE(metric_cl.value, 0) * ${weights.copyLinkClick}) +
 					(COALESCE(metric_ol.value, 0) * ${weights.openLinkClick})
-				) AS INTEGER)`.as('score'),
-				eb.cast(eb.fn.coalesce('av.votes', sql.lit(0)), 'integer').as('votes'),
-				eb.cast(eb.fn.coalesce('metric_pv.value', sql.lit(0)), 'integer').as('pageViews'),
-				eb.cast(eb.fn.coalesce('metric_ol.value', sql.lit(0)), 'integer').as('openLinkClicks'),
-				eb.cast(eb.fn.coalesce('metric_cl.value', sql.lit(0)), 'integer').as('copyLinkClicks'),
+				) AS SIGNED)`.as('score'),
+				sql<number>`CAST(COALESCE(av.votes, 0) AS SIGNED)`.as('votes'),
+				sql<number>`CAST(COALESCE(metric_pv.value, 0) AS SIGNED)`.as('pageViews'),
+				sql<number>`CAST(COALESCE(metric_ol.value, 0) AS SIGNED)`.as('openLinkClicks'),
+				sql<number>`CAST(COALESCE(metric_cl.value, 0) AS SIGNED)`.as('copyLinkClicks'),
 				'u.username',
 				'au.units',
 				'ae.equipment',
 				'ap.pets',
 				'ac.comments',
-				eb.cast(eb.fn.coalesce('ac.commentsCount', sql.lit(0)), 'integer').as('commentsCount'),
+				sql<number>`CAST(COALESCE(ac.commentsCount, 0) AS SIGNED)`.as('commentsCount'),
 				'art.tags',
 				sql<boolean>`(ag.id IS NOT NULL)`.as('hasGuide'),
 				(includeGuideContent
