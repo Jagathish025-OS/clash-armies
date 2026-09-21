@@ -13,9 +13,11 @@ if (!building) {
 	if (typeof DB_USER !== 'string') {
 		throw new Error('Expected database user to be defined');
 	}
+
 	if (typeof DB_PASSWORD !== 'string') {
 		throw new Error('Expected database password to be defined');
 	}
+
 	if (DB_PORT && Number.isNaN(+DB_PORT)) {
 		throw new Error('Expected database port to be a valid number');
 	}
@@ -36,6 +38,7 @@ const dialect = new MysqlDialect({
 			if (field.type === 'TINY' && field.length === 1) {
 				return field.string() === '1';
 			}
+
 			return next();
 		},
 	}),
@@ -53,30 +56,30 @@ export const helpers = {
 		return sql<Date>`NOW() - INTERVAL ${sql.raw(interval)}`;
 	},
 
-	jsonAgg(
-		col: string,
-		orderBy?: { order: string; dir?: 'ASC' | 'DESC' },
-	) {
-		const orderByClause = orderBy
-			? sql` ORDER BY ${sql.ref(orderBy.order)} ${sql.raw(orderBy.dir ?? 'ASC')}`
-			: sql``;
-
-		return sql`JSON_ARRAYAGG(${sql.ref(col)}${orderByClause})`;
+	/**
+	 * TiDB-compatible JSON array aggregation.
+	 *
+	 * TiDB does not accept ORDER BY inside JSON_ARRAYAGG()
+	 * in the same syntax supported by MySQL.
+	 */
+	jsonAgg(col: string) {
+		return sql`JSON_ARRAYAGG(${sql.ref(col)})`;
 	},
 
-	jsonAggObj(
-		obj: Record<string, string>,
-		orderBy?: { order: string; dir?: 'ASC' | 'DESC' },
-	) {
+	/**
+	 * TiDB-compatible JSON object array aggregation.
+	 *
+	 * Ordering is intentionally handled outside JSON_ARRAYAGG()
+	 * because TiDB rejects:
+	 *
+	 * JSON_ARRAYAGG(JSON_OBJECT(...) ORDER BY ...)
+	 */
+	jsonAggObj(obj: Record<string, string>) {
 		const pairs = Object.entries(obj).map(
 			([key, col]) => sql`'${sql.raw(key)}', ${sql.ref(col)}`,
 		);
 
-		const orderByClause = orderBy
-			? sql` ORDER BY ${sql.ref(orderBy.order)} ${sql.raw(orderBy.dir ?? 'ASC')}`
-			: sql``;
-
-		return sql`JSON_ARRAYAGG(JSON_OBJECT(${sql.join(pairs, sql`,`)})${orderByClause})`;
+		return sql`JSON_ARRAYAGG(JSON_OBJECT(${sql.join(pairs, sql`, `)}))`;
 	},
 
 	async upsert<TB extends keyof DB & string>(
