@@ -503,7 +503,7 @@ export class ArmyAPI {
 			.groupBy('a.id')
 			.selectAll('a')
 			.select((eb) => [
-				// TiDB-compatible integer casts. TiDB rejects CAST(... AS INTEGER).
+				// TODO: should not have to CAST, needs investigating
 				sql<number>`CAST((
 					(COALESCE(av.votes, 0) * ${weights.vote}) +
 					(COALESCE(metric_pv.value, 0) * ${weights.pageView}) +
@@ -521,17 +521,17 @@ export class ArmyAPI {
 				'ac.comments',
 				sql<number>`CAST(COALESCE(ac.commentsCount, 0) AS SIGNED)`.as('commentsCount'),
 				'art.tags',
-				sql<boolean>`(ag.id IS NOT NULL)`.as('hasGuide'),
+				sql<boolean>`MAX(ag.id IS NOT NULL)`.as('hasGuide'),
 				(includeGuideContent
-					? sql<Army['guide']>`IF(ag.id, JSON_OBJECT(
+					? sql<Army['guide']>`MAX(IF(ag.id IS NOT NULL, JSON_OBJECT(
 						'id', ag.id,
 						'textContent', ag.textContent,
 						'youtubeUrl', ag.youtubeUrl
-					), NULL)`
+					), NULL))`
 					: sql<Army['guide']>`NULL`
 				).as('guide'),
-				sql<boolean>`(sa.id IS NOT NULL)`.as('userBookmarked'),
-				eb.fn.coalesce('uv.vote', sql.lit(0)).as('userVote'),
+				sql<boolean>`MAX(sa.id IS NOT NULL)`.as('userBookmarked'),
+				sql<number>`COALESCE(MAX(uv.vote), 0)`.as('userVote'),
 				// Total rows matching the filters *before* the LIMIT/OFFSET are applied above.
 				// Uses window function to prevent running another query, with the trade-off that every row will get a `total` field.
 				eb.fn.countAll<number>().over().as('total'),
