@@ -505,22 +505,22 @@ export class ArmyAPI {
 			.select((eb) => [
 				// TODO: should not have to CAST, needs investigating
 				sql<number>`CAST((
-					(COALESCE(av.votes, 0) * ${weights.vote}) +
-					(COALESCE(metric_pv.value, 0) * ${weights.pageView}) +
-					(COALESCE(metric_cl.value, 0) * ${weights.copyLinkClick}) +
-					(COALESCE(metric_ol.value, 0) * ${weights.openLinkClick})
+					(COALESCE(MAX(av.votes), 0) * ${weights.vote}) +
+					(COALESCE(MAX(metric_pv.value), 0) * ${weights.pageView}) +
+					(COALESCE(MAX(metric_cl.value), 0) * ${weights.copyLinkClick}) +
+					(COALESCE(MAX(metric_ol.value), 0) * ${weights.openLinkClick})
 				) AS SIGNED)`.as('score'),
-				sql<number>`CAST(COALESCE(av.votes, 0) AS SIGNED)`.as('votes'),
-				sql<number>`CAST(COALESCE(metric_pv.value, 0) AS SIGNED)`.as('pageViews'),
-				sql<number>`CAST(COALESCE(metric_ol.value, 0) AS SIGNED)`.as('openLinkClicks'),
-				sql<number>`CAST(COALESCE(metric_cl.value, 0) AS SIGNED)`.as('copyLinkClicks'),
-				'u.username',
-				'au.units',
-				'ae.equipment',
-				'ap.pets',
-				'ac.comments',
-				sql<number>`CAST(COALESCE(ac.commentsCount, 0) AS SIGNED)`.as('commentsCount'),
-				'art.tags',
+				sql<number>`CAST(COALESCE(MAX(av.votes), 0) AS SIGNED)`.as('votes'),
+				sql<number>`CAST(COALESCE(MAX(metric_pv.value), 0) AS SIGNED)`.as('pageViews'),
+				sql<number>`CAST(COALESCE(MAX(metric_ol.value), 0) AS SIGNED)`.as('openLinkClicks'),
+				sql<number>`CAST(COALESCE(MAX(metric_cl.value), 0) AS SIGNED)`.as('copyLinkClicks'),
+				sql<string>`ANY_VALUE(u.username)`.as('username'),
+				sql<Army['units']>`ANY_VALUE(au.units)`.as('units'),
+				sql<Army['equipment']>`ANY_VALUE(ae.equipment)`.as('equipment'),
+				sql<Army['pets']>`ANY_VALUE(ap.pets)`.as('pets'),
+				sql<Army['comments']>`ANY_VALUE(ac.comments)`.as('comments'),
+				sql<number>`CAST(COALESCE(MAX(ac.commentsCount), 0) AS SIGNED)`.as('commentsCount'),
+				sql<Army['tags']>`ANY_VALUE(art.tags)`.as('tags'),
 				sql<boolean>`MAX(ag.id IS NOT NULL)`.as('hasGuide'),
 				(includeGuideContent
 					? sql<Army['guide']>`MAX(IF(ag.id IS NOT NULL, JSON_OBJECT(
